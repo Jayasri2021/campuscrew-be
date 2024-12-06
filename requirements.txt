@@ -5,3 +5,4 @@ werkzeug
 supabase
 psycopg2-binary
 flask-cors
+gunicorn==20.1.0
