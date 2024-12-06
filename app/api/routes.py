@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from app.models import Users, Services
+from app.models import Users, Services, Bookings
 import uuid
 
 api = Blueprint('api', __name__)
@@ -119,6 +119,67 @@ def get_services():
                 "services": services,
                 "filter": "none"
             }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@api.route("/createBooking", methods=["POST"])
+def create_booking():
+    try:
+        data = request.get_json()
+        service_id = data.get("service_id")
+        user_id = data.get("user_id")
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+
+        if not all([service_id, user_id, start_time, end_time]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        booking, error = Bookings.create_booking(service_id, user_id, start_time, end_time)
+        
+        if error:
+            return jsonify({"error": error}), 400
+
+        return jsonify({
+            "message": "Booking created successfully",
+            "booking": {
+                "booking_id": booking["booking_id"],
+                "slot_id": booking["slot_id"],
+                "booked_by": booking["booked_by"],
+                "booking_time": booking["booking_time"]
+            }
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route("/bookings/<user_id>", methods=["GET"])
+def get_user_bookings(user_id):
+    try:
+        bookings, error = Bookings.get_user_bookings(user_id)
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({
+            "message": "Bookings fetched successfully",
+            "bookings": bookings
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@api.route("/booking/slot/<slot_id>", methods=["GET"])
+def get_booking_by_slot(slot_id):
+    try:
+        booking, error = Bookings.get_booking_by_slot(slot_id)
+        if error:
+            return jsonify({"error": error}), 500
+
+        return jsonify({
+            "message": "Booking fetched successfully",
+            "booking": booking
+        }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
